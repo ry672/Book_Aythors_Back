@@ -8,24 +8,31 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
-  app.setGlobalPrefix("/api");
+  app.setGlobalPrefix('api');
+
   app.enableCors({
-    origin: "http://localhost:5173",
-    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  });
-  app.useStaticAssets(join(process.cwd(), "uploads"), {
-    prefix: "/uploads/",
+    origin: process.env.FRONTEND_URL || true,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads/',
+  });
 
   const config = new DocumentBuilder()
-    .setTitle("Online Store Api")
-    .setDescription("Api for books search")
+    .setTitle('Online Store Api')
+    .setDescription('Api for books search')
     .setVersion('1.0.0')
-    .build()
+    .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
@@ -34,8 +41,9 @@ async function bootstrap() {
   console.log('DB_PORT =', process.env.DB_PORT);
   console.log('DB_NAME =', process.env.DB_NAME);
   console.log('DB_USER =', process.env.DB_USER);
-  await app.listen(process.env.PORT ?? 5000);
+  console.log('PORT =', process.env.PORT);
 
+  await app.listen(Number(process.env.PORT) || 5000);
 }
 
 bootstrap();
