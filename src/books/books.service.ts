@@ -90,15 +90,15 @@ export class BooksService {
       const exact = Number(query.price);
       if (!Number.isNaN(exact)) where.price = exact;
     } else {
-      const min = query.minPrice !== undefined ? Number(query.minPrice) : NaN;
-      const max = query.maxPrice !== undefined ? Number(query.maxPrice) : NaN;
+      // const min = query.minPrice !== undefined ? Number(query.minPrice) : NaN;
+      // const max = query.maxPrice !== undefined ? Number(query.maxPrice) : NaN;
 
-      if (!Number.isNaN(min) || !Number.isNaN(max)) {
-        where.price = {
-          ...(Number.isNaN(min) ? {} : { [Op.gte]: min }),
-          ...(Number.isNaN(max) ? {} : { [Op.lte]: max }),
-        } as any;
-      }
+      // if (!Number.isNaN(min) || !Number.isNaN(max)) {
+      //   where.price = {
+      //     ...(Number.isNaN(min) ? {} : { [Op.gte]: min }),
+      //     ...(Number.isNaN(max) ? {} : { [Op.lte]: max }),
+      //   } as any;
+      // }
     }
 
     const q = query.search?.trim();

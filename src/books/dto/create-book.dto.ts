@@ -92,13 +92,13 @@ export class FindBookQuery {
   @MinLength(1)
   tags?: string;
   
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  minPrice?: string;
+  // @ApiPropertyOptional()
+  // @IsOptional()
+  // @IsString()
+  // minPrice?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  maxPrice?: string;
+  // @ApiPropertyOptional()
+  // @IsOptional()
+  // @IsString()
+  // maxPrice?: string;
 }
