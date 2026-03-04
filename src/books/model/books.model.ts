@@ -1,0 +1,58 @@
+import { Column, CreatedAt, DataType, ForeignKey, Table, UpdatedAt , HasMany, Model, BelongsTo} from "sequelize-typescript";
+import { AuthorModel } from "../../author/model/author.model";
+import { CategoryModel } from "../../category/model/category.model";
+
+interface BookCreate  {
+    name: string;
+    categoryId?: number;
+    price: number;
+    authorId?: number;
+    description: string;
+    link: string;
+    is_deleted?: boolean;
+
+}
+
+
+@Table({tableName: "books", timestamps: true , underscored: true})
+export class BookModel extends Model<BookModel, BookCreate> {
+    @Column({type: DataType.INTEGER, autoIncrement: true, primaryKey: true })
+    declare id: number;
+    
+    @Column({type: DataType.STRING, allowNull: false})
+    declare name: string;
+
+    @ForeignKey(()=> CategoryModel)
+    @Column({type: DataType.INTEGER, allowNull: false, field: 'category_id'})
+    declare categoryId: number;
+
+    @Column({type: DataType.INTEGER, allowNull: false})
+    declare price: number;
+
+    @ForeignKey(()=> AuthorModel)
+    @Column({type: DataType.INTEGER, allowNull: false, field: 'author_id'})
+    declare authorId: number;
+
+    @Column({type: DataType.STRING, allowNull: false})
+    declare description: string;
+
+    @Column({type: DataType.STRING, allowNull: false})
+    declare link: string;
+
+    @CreatedAt
+    declare created_at: string;
+
+    @UpdatedAt
+    declare update_at: string;
+
+    @Column({type: DataType.BOOLEAN, allowNull: false, defaultValue: false})
+    declare is_deleted?: boolean;
+
+    declare page?: number;
+
+    @BelongsTo(() => AuthorModel, {foreignKey: "authorId"})
+    declare author: AuthorModel;
+
+    @BelongsTo(()=> CategoryModel, {foreignKey: "categoryId"})
+    declare category: CategoryModel;
+}
