@@ -67,6 +67,7 @@ export class FindBookQuery {
   @IsString()
   price?: string; 
 
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

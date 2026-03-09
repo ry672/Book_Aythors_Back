@@ -62,6 +62,12 @@ export class FindAuthorQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  country?: string;
+
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   search?: string;
 
   @ApiPropertyOptional({ example: 10 })

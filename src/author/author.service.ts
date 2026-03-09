@@ -17,6 +17,7 @@ export type FindAuthorQuery = {
   name?: string;
   full_name?: string;
   description?: string;
+  country?: string
   search?: string;
   take?: number;
   page?: number;
@@ -59,7 +60,7 @@ export class AuthorService {
         is_deleted: false,
         [Op.or]: [
           { name: { [Op.iLike]: name } },
-          { full_name: { [Op.iLike]: fullName } },
+          { full_name: { [Op.iLike]: fullName } },     
         ],
       },
     });
@@ -67,16 +68,6 @@ export class AuthorService {
     if (existing) {
       await this.safeRemoveUploadedFile(file);
 
-      const sameName =
-        typeof existing.name === 'string' &&
-        existing.name.trim().toLowerCase() === name.toLowerCase();
-      const sameFullName =
-        typeof existing.full_name === 'string' &&
-        existing.full_name.trim().toLowerCase() === fullName.toLowerCase();
-
-      if (sameName) throw new ConflictException('Author name already exists');
-      if (sameFullName) throw new ConflictException('Author full_name already exists');
-      throw new ConflictException('Author already exists');
     }
 
     try {
@@ -135,12 +126,17 @@ export class AuthorService {
       where.description = { [Op.iLike]: `%${query.description.trim()}%` };
     }
 
+    if(query.country?.trim()) {
+      where.country = {[Op.iLike]: `%${query.country.trim()}%`}
+    }
+
     const q = query.search?.trim();
     if (q) {
       where[Op.or] = [
         { name: { [Op.iLike]: `%${q}%` } },
         { full_name: { [Op.iLike]: `%${q}%` } },
         { description: { [Op.iLike]: `%${q}%` } },
+        { country: { [Op.iLike]: `%${q}%` } },
       ];
     }
 
@@ -168,7 +164,7 @@ export class AuthorService {
     const nextName = dto.name?.trim();
     const nextFullName = dto.full_name?.trim();
 
-    if (nextName || nextFullName) {
+    if (!nextName || !nextFullName) {
       const conflict = await this.authorModel.findOne({
         where: {
           id: { [Op.ne]: id },
@@ -212,9 +208,7 @@ export class AuthorService {
     } catch (error: unknown) {
       await this.safeRemoveUploadedFile(file);
 
-      if (error instanceof UniqueConstraintError) {
-        throw new ConflictException('Author name or full_name already exists');
-      }
+      
 
       const message = error instanceof Error ? error.message : 'Update failed';
       throw new InternalServerErrorException(message);
