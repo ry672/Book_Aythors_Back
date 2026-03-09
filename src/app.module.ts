@@ -14,16 +14,15 @@ import { BooksModule } from './books/books.module';
 
     SequelizeModule.forRoot({
       dialect: 'postgres',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '5432', 10),
-      username: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD || 'postgres',
-      database: process.env.DB_NAME || 'project_name',
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT),
+      username: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
       autoLoadModels: true,
       synchronize: true,
-      sync: { force: false},
-      logging: process.env.MODE === 'development',
-      
+      sync: { force: false },
+      logging: false,
     }),
 
     ServeStaticModule.forRoot({
@@ -34,4 +33,4 @@ import { BooksModule } from './books/books.module';
     AuthorModule, CategoryModule, BooksModule
   ],
 })
-export class AppModule {}
+export class AppModule { }

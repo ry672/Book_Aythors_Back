@@ -16,22 +16,26 @@ async function bootstrap() {
     methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   });
-   app.useStaticAssets(join(process.cwd(), "uploads"), {
+  app.useStaticAssets(join(process.cwd(), "uploads"), {
     prefix: "/uploads/",
   });
 
 
   const config = new DocumentBuilder()
-  .setTitle("Online Store Api")
-  .setDescription("Api for books search")
-  .setVersion('1.0.0')
-  .build()
+    .setTitle("Online Store Api")
+    .setDescription("Api for books search")
+    .setVersion('1.0.0')
+    .build()
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
 
+  console.log('DB_HOST =', process.env.DB_HOST);
+  console.log('DB_PORT =', process.env.DB_PORT);
+  console.log('DB_NAME =', process.env.DB_NAME);
+  console.log('DB_USER =', process.env.DB_USER);
   await app.listen(process.env.PORT ?? 5000);
-  
+
 }
 
 bootstrap();
