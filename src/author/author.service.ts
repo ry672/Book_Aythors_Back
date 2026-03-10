@@ -51,21 +51,7 @@ export class AuthorService {
     if (!name || !fullName) {
       throw new ConflictException('name and full_name are required');
     }
-
-    const existing = await this.authorModel.findOne({
-      where: {
-        is_deleted: false,
-        [Op.or]: [
-          { name: { [Op.iLike]: name } },
-          { full_name: { [Op.iLike]: fullName } },
-        ],
-      },
-    });
-
-    if (existing) {
-      throw new ConflictException('Author name or full_name already exists');
-    }
-
+   
     try {
       const author = await this.authorModel.create({
         ...dto,
@@ -77,10 +63,6 @@ export class AuthorService {
 
       return author;
     } catch (error: unknown) {
-      if (error instanceof UniqueConstraintError) {
-        throw new ConflictException('Author name or full_name already exists');
-      }
-
       const message = error instanceof Error ? error.message : 'Create failed';
       throw new InternalServerErrorException(message);
     }
@@ -152,22 +134,6 @@ export class AuthorService {
     const nextName = dto.name?.trim();
     const nextFullName = dto.full_name?.trim();
 
-    if (nextName || nextFullName) {
-      const conflict = await this.authorModel.findOne({
-        where: {
-          id: { [Op.ne]: id },
-          is_deleted: false,
-          [Op.or]: [
-            ...(nextName ? [{ name: { [Op.iLike]: nextName } }] : []),
-            ...(nextFullName ? [{ full_name: { [Op.iLike]: nextFullName } }] : []),
-          ],
-        },
-      });
-
-      if (conflict) {
-        throw new ConflictException('Author name or full_name already exists');
-      }
-    }
 
     try {
       await author.update({
@@ -178,9 +144,6 @@ export class AuthorService {
 
       return author;
     } catch (error: unknown) {
-      if (error instanceof UniqueConstraintError) {
-        throw new ConflictException('Author name or full_name already exists');
-      }
 
       const message = error instanceof Error ? error.message : 'Update failed';
       throw new InternalServerErrorException(message);
