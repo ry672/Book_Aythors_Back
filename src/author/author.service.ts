@@ -32,7 +32,7 @@ export class AuthorService {
 
     @InjectModel(BookModel)
     private readonly bookModel: typeof BookModel,
-  ) {}
+  ) { }
 
   private async safeRemoveUploadedFile(file?: Express.Multer.File) {
     if (!file) return;
@@ -40,34 +40,30 @@ export class AuthorService {
       const filePath = join(process.cwd(), 'uploads', 'avatars', file.filename);
       await fs.unlink(filePath);
     } catch {
-      
+
     }
   }
 
-  async create(dto: AuthorCreateDto, file?: Express.Multer.File) {
-    
+  async create(dto: AuthorCreateDto) {
     const name = dto.name?.trim();
     const fullName = dto.full_name?.trim();
 
     if (!name || !fullName) {
-      await this.safeRemoveUploadedFile(file);
       throw new ConflictException('name and full_name are required');
     }
 
-    
     const existing = await this.authorModel.findOne({
       where: {
         is_deleted: false,
         [Op.or]: [
           { name: { [Op.iLike]: name } },
-          { full_name: { [Op.iLike]: fullName } },     
+          { full_name: { [Op.iLike]: fullName } },
         ],
       },
     });
 
     if (existing) {
-      await this.safeRemoveUploadedFile(file);
-
+      throw new ConflictException('Author name or full_name already exists');
     }
 
     try {
@@ -75,18 +71,12 @@ export class AuthorService {
         ...dto,
         name,
         full_name: fullName,
+        author_photo: dto.author_photo ?? undefined,
         is_deleted: false,
       });
 
-      if (file) {
-        author.author_photo = `/uploads/avatars/${file.filename}`;
-        await author.save();
-      }
-
       return author;
     } catch (error: unknown) {
-      await this.safeRemoveUploadedFile(file);
-
       if (error instanceof UniqueConstraintError) {
         throw new ConflictException('Author name or full_name already exists');
       }
@@ -126,8 +116,8 @@ export class AuthorService {
       where.description = { [Op.iLike]: `%${query.description.trim()}%` };
     }
 
-    if(query.country?.trim()) {
-      where.country = {[Op.iLike]: `%${query.country.trim()}%`}
+    if (query.country?.trim()) {
+      where.country = { [Op.iLike]: `%${query.country.trim()}%` }
     }
 
     const q = query.search?.trim();
@@ -156,15 +146,13 @@ export class AuthorService {
     return { count, rows: result.rows, page, take, pages };
   }
 
-  async update(id: number, dto: UpdateAuthorDto, file?: Express.Multer.File) {
+  async update(id: number, dto: UpdateAuthorDto) {
     const author = await this.findByPk(id);
-    const oldPhoto = author.author_photo;
-
 
     const nextName = dto.name?.trim();
     const nextFullName = dto.full_name?.trim();
 
-    if (!nextName || !nextFullName) {
+    if (nextName || nextFullName) {
       const conflict = await this.authorModel.findOne({
         where: {
           id: { [Op.ne]: id },
@@ -177,7 +165,6 @@ export class AuthorService {
       });
 
       if (conflict) {
-        await this.safeRemoveUploadedFile(file);
         throw new ConflictException('Author name or full_name already exists');
       }
     }
@@ -189,26 +176,11 @@ export class AuthorService {
         ...(nextFullName !== undefined ? { full_name: nextFullName } : {}),
       });
 
-      if (file) {
-        author.author_photo = `/uploads/avatars/${file.filename}`;
-        await author.save();
-
-        if (oldPhoto && oldPhoto.startsWith('/uploads/avatars/')) {
-          const oldFilename = oldPhoto.replace('/uploads/avatars/', '');
-          const oldPath = join(process.cwd(), 'uploads', 'avatars', oldFilename);
-          try {
-            await fs.unlink(oldPath);
-          } catch {
-           
-          }
-        }
-      }
-
       return author;
     } catch (error: unknown) {
-      await this.safeRemoveUploadedFile(file);
-
-      
+      if (error instanceof UniqueConstraintError) {
+        throw new ConflictException('Author name or full_name already exists');
+      }
 
       const message = error instanceof Error ? error.message : 'Update failed';
       throw new InternalServerErrorException(message);

@@ -39,9 +39,10 @@ export class AuthorCreateDto {
   @MinLength(2, { message: 'country should be more than 2' })
   country?: string;
 
-  @ApiPropertyOptional({ type: 'string', format: 'binary' })
+  @ApiProperty()
   @IsOptional()
-  file?: undefined;
+  @IsString()
+  author_photo?: string | undefined;
 }
 export class FindAuthorQueryDto {
   @ApiPropertyOptional()

@@ -5,6 +5,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { AuthorModule } from './author/author.module';
 import { CategoryModule } from './category/category.module';
 import { BooksModule } from './books/books.module';
+import { ImagekitModule } from './imagekit/imagekit.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { BooksModule } from './books/books.module';
     AuthorModule,
     CategoryModule,
     BooksModule,
+    ImagekitModule,
   ],
 })
 export class AppModule {}
