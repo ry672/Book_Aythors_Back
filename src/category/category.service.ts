@@ -1,5 +1,4 @@
 import {
-  ConflictException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -25,12 +24,11 @@ export class CategoryService {
   ) {}
 
   async create(dto: CategoryCreateDto) {
-   
-
     try {
       return await this.categoryModel.create({
         ...dto,
         name: dto.name.trim(),
+        status: 'active',
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Create failed';
@@ -100,7 +98,6 @@ export class CategoryService {
 
   async update(id: number, dto: UpdateACategoryDto) {
     const category = await this.findByPk(id);
-
 
     try {
       await category.update({
