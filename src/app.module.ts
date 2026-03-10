@@ -9,7 +9,6 @@ import { BooksModule } from './books/books.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-
     SequelizeModule.forRoot({
       dialect: 'postgres',
       host: process.env.DB_HOST,
@@ -22,7 +21,6 @@ import { BooksModule } from './books/books.module';
       sync: { force: false },
       logging: false,
     }),
-
     AuthorModule,
     CategoryModule,
     BooksModule,
