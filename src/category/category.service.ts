@@ -25,13 +25,7 @@ export class CategoryService {
   ) {}
 
   async create(dto: CategoryCreateDto) {
-    const existing = await this.categoryModel.findOne({
-      where: { name: dto.name.trim() },
-    });
-
-    if (existing) {
-      throw new ConflictException('Category already exists');
-    }
+   
 
     try {
       return await this.categoryModel.create({
@@ -107,18 +101,6 @@ export class CategoryService {
   async update(id: number, dto: UpdateACategoryDto) {
     const category = await this.findByPk(id);
 
-    if (dto.name) {
-      const existing = await this.categoryModel.findOne({
-        where: {
-          name: dto.name.trim(),
-          id: { [Op.ne]: id },
-        },
-      });
-
-      if (existing) {
-        throw new ConflictException('Category already exists');
-      }
-    }
 
     try {
       await category.update({
