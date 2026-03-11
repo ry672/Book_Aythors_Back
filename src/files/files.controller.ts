@@ -56,7 +56,7 @@ export class FilesController {
         const ok = /image\/(png|jpeg|jpg|webp|gif)/i.test(file.mimetype);
         cb(ok ? null : new Error('Only image files are allowed'), ok);
       },
-      limits: { fileSize: 5 * 1024 * 1024 },
+      limits: { fileSize: 10 * 1024 * 1024 },
     }),
   )
   async uploadAvatar(
@@ -65,7 +65,7 @@ export class FilesController {
   ) {
     if (!file) {
       throw new BadRequestException(
-        'Необходимо прикрепить файл формата: png | jpg | jpeg | webp | gif',
+        'File required: png | jpg | jpeg | webp | gif',
       );
     }
 
@@ -116,7 +116,7 @@ export class FilesController {
   ) {
     if (!file) {
       throw new BadRequestException(
-        'Необходимо прикрепить файл формата: png | jpg | jpeg | webp | gif',
+        'File required: png | jpg | jpeg | webp | gif',
       );
     }
 
