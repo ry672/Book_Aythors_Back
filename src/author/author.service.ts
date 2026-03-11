@@ -141,9 +141,8 @@ export class AuthorService {
       limit: take,
       offset,
       order: [['id', 'DESC']],
-      include: [{ model: this.bookModel, as: 'book', required: false }],
-      distinct: true,
-      col: 'id',
+      include: [{ model: this.bookModel, as: 'books', required: false }],
+      distinct: true
     });
 
     const count = Number(result.count);
