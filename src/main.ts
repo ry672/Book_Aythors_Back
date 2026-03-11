@@ -1,12 +1,14 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { join } from 'path';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  app.setGlobalPrefix('api');
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -16,28 +18,27 @@ async function bootstrap() {
     }),
   );
 
-  app.setGlobalPrefix('api');
-
   app.enableCors({
     origin: process.env.FRONTEND_URL || true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
   });
 
-  app.useStaticAssets(join(process.cwd(), "uploads"), {
-    prefix: "/uploads",
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads',
   });
 
   const config = new DocumentBuilder()
-    .setTitle('Online Store Api')
-    .setDescription('Api for books search')
+    .setTitle('Online Store API')
+    .setDescription('API for books search')
     .setVersion('1.0.0')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
 
-  await app.listen(Number(process.env.PORT) || 5000);
+  const port = Number(process.env.PORT) || 5000;
+  await app.listen(port);
 }
-
-bootstrap();
+void bootstrap();

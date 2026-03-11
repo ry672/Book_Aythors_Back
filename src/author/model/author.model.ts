@@ -1,47 +1,81 @@
-import type { CreationOptional } from "sequelize";
-import { AllowNull, BelongsTo, HasMany, Model } from "sequelize-typescript";
-import { Column, CreatedAt, DataType, Table, UpdatedAt } from "sequelize-typescript";
-import { BookModel } from "src/books/model/books.model";
+import type { CreationOptional } from 'sequelize';
+import {
+  AllowNull,
+  Column,
+  CreatedAt,
+  DataType,
+  HasMany,
+  Model,
+  Table,
+  UpdatedAt,
+} from 'sequelize-typescript';
+import { BookModel } from 'src/books/model/books.model';
 
-interface AuthorCreate  {
-    name: string;
-    full_name: string;
-    description?: string;
-    country?: string;
-    is_deleted?: boolean;
+interface AuthorCreate {
+  name: string;
+  full_name: string;
+  description?: string;
+  author_photo?: string | null;
+  country?: string;
+  is_deleted?: boolean;
 }
 
-
-@Table({tableName: "authors", timestamps: true})
+@Table({
+  tableName: 'authors',
+  timestamps: true,
+})
 export class AuthorModel extends Model<AuthorModel, AuthorCreate> {
-    @Column({ type: DataType.INTEGER, autoIncrement: true, primaryKey: true })
-    declare id: CreationOptional<number>;
+  @Column({
+    type: DataType.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+  })
+  declare id: CreationOptional<number>;
 
-    @Column({type: DataType.STRING, allowNull: false})
-    declare name: string;
+  @AllowNull(false)
+  @Column({
+    type: DataType.STRING(30),
+  })
+  declare name: string;
 
-    @Column({type: DataType.STRING, allowNull: false})
-    declare full_name: string;
+  @AllowNull(false)
+  @Column({
+    type: DataType.STRING(30),
+  })
+  declare full_name: string;
 
-    @Column({type: DataType.STRING, allowNull: true})
-    declare description?: string;
+  @AllowNull(true)
+  @Column({
+    type: DataType.STRING(100),
+  })
+  declare description?: string;
 
-    @Column({type: DataType.STRING(500), allowNull: true, defaultValue: null})
-    declare author_photo?: string | null; 
+  @AllowNull(true)
+  @Column({
+    type: DataType.STRING(500),
+    defaultValue: null,
+  })
+  declare author_photo?: string | null;
 
-    @Column({type: DataType.STRING, allowNull: true})
-    declare country?: string;
+  @AllowNull(true)
+  @Column({
+    type: DataType.STRING(30),
+  })
+  declare country?: string;
 
-    @Column({type: DataType.BOOLEAN, allowNull: false, defaultValue: false})
-    declare is_deleted: boolean;
+  @AllowNull(false)
+  @Column({
+    type: DataType.BOOLEAN,
+    defaultValue: false,
+  })
+  declare is_deleted: boolean;
 
-    @HasMany(() => BookModel)
-    declare book: BookModel[];
+  @HasMany(() => BookModel)
+  declare books: BookModel[];
 
-    @CreatedAt
-    declare createdAt: Date;
+  @CreatedAt
+  declare createdAt: CreationOptional<Date>;
 
-    @UpdatedAt
-    declare updatedAt: Date;
-    
+  @UpdatedAt
+  declare updatedAt: CreationOptional<Date>;
 }

@@ -34,19 +34,27 @@ export class AuthorService {
     private readonly bookModel: typeof BookModel,
   ) {}
 
+  private getAvatarPublicUrl(fileName: string) {
+    return `/uploads/avatars/${fileName}`;
+  }
+
+  private getAvatarDiskPath(fileName: string) {
+    return join(process.cwd(), 'uploads', 'avatars', fileName);
+  }
+
   private async safeRemoveFileByUrl(fileUrl?: string | null) {
     if (!fileUrl) return;
 
     try {
       const fileName = basename(fileUrl);
-      const filePath = join(process.cwd(), 'uploads', 'avatars', fileName);
+      const filePath = this.getAvatarDiskPath(fileName);
       await fs.unlink(filePath);
     } catch {
       // ignore file delete errors
     }
   }
 
-  async create(dto: AuthorCreateDto) {
+  async create(dto: AuthorCreateDto, file?: Express.Multer.File) {
     const name = dto.name?.trim();
     const fullName = dto.full_name?.trim();
 
@@ -54,16 +62,23 @@ export class AuthorService {
       throw new ConflictException('name and full_name are required');
     }
 
+    const publicUrl = file ? this.getAvatarPublicUrl(file.filename) : null;
+
     try {
       const author = await this.authorModel.create({
         ...dto,
         name,
         full_name: fullName,
+        author_photo: publicUrl,
         is_deleted: false,
       });
 
       return author;
     } catch (error: unknown) {
+      if (publicUrl) {
+        await this.safeRemoveFileByUrl(publicUrl);
+      }
+
       const message = error instanceof Error ? error.message : 'Create failed';
       throw new InternalServerErrorException(message);
     }
@@ -143,66 +158,33 @@ export class AuthorService {
     };
   }
 
-  async update(id: number, dto: UpdateAuthorDto) {
+  async update(id: number, dto: UpdateAuthorDto, file?: Express.Multer.File) {
     const author = await this.findByPk(id);
 
     const nextName = dto.name?.trim();
     const nextFullName = dto.full_name?.trim();
+    const newPhotoUrl = file ? this.getAvatarPublicUrl(file.filename) : undefined;
+    const oldPhotoUrl = author.author_photo;
 
     try {
       await author.update({
         ...dto,
         ...(nextName !== undefined ? { name: nextName } : {}),
         ...(nextFullName !== undefined ? { full_name: nextFullName } : {}),
+        ...(newPhotoUrl !== undefined ? { author_photo: newPhotoUrl } : {}),
       });
+
+      if (newPhotoUrl && oldPhotoUrl) {
+        await this.safeRemoveFileByUrl(oldPhotoUrl);
+      }
 
       return author;
     } catch (error: unknown) {
+      if (newPhotoUrl) {
+        await this.safeRemoveFileByUrl(newPhotoUrl);
+      }
+
       const message = error instanceof Error ? error.message : 'Update failed';
-      throw new InternalServerErrorException(message);
-    }
-  }
-
-  async setAvatar(authorId: number, file: Express.Multer.File) {
-    const author = await this.findByPk(authorId);
-
-    const publicUrl = `/static/avatars/${file.filename}`;
-
-    try {
-      if (author.author_photo) {
-        await this.safeRemoveFileByUrl(author.author_photo);
-      }
-
-      await author.update({
-        author_photo: publicUrl,
-      });
-
-      return author;
-    } catch (error: unknown) {
-      await this.safeRemoveFileByUrl(publicUrl);
-
-      const message =
-        error instanceof Error ? error.message : 'Avatar update failed';
-      throw new InternalServerErrorException(message);
-    }
-  }
-
-  async removeAvatar(authorId: number) {
-    const author = await this.findByPk(authorId);
-
-    try {
-      if (author.author_photo) {
-        await this.safeRemoveFileByUrl(author.author_photo);
-      }
-
-      await author.update({
-        author_photo: null,
-      });
-
-      return { message: 'Avatar removed' };
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Avatar remove failed';
       throw new InternalServerErrorException(message);
     }
   }
@@ -227,6 +209,7 @@ export class AuthorService {
 
   async hardremove(id: number) {
     const author = await this.authorModel.findByPk(id);
+
     if (!author) {
       throw new NotFoundException('Author not found');
     }

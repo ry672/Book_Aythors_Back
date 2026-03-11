@@ -1,11 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
-
 import { AuthorModule } from './author/author.module';
 import { CategoryModule } from './category/category.module';
 import { BooksModule } from './books/books.module';
-import { FilesModule } from './files/files.module';
 
 
 @Module({
@@ -26,7 +24,6 @@ import { FilesModule } from './files/files.module';
     AuthorModule,
     CategoryModule,
     BooksModule,
-    FilesModule,
   ],
 })
 export class AppModule {}
