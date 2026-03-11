@@ -41,12 +41,11 @@ export class FilesService {
   }
     
 
- 
-   
+
 
   async setAvatar(authorId: number, file: Express.Multer.File) {
     const author = await this.findAuthor(authorId)
-    const publicUrl = `/uploads/avatars/${file.filename}`
+    const publicUrl = `/uploads/${file.filename}`
 
 
     try {
