@@ -19,47 +19,49 @@ export class FilesService {
     const author = await this.authorModel.findOne({
       where: {
         id: authorId,
-        is_deleted: false,
-      },
-    });
+        is_deleted: false
+      }
+    })
 
-    if (!author) {
-      throw new NotFoundException('Автор не найден');
-    }
+    if (!author) throw new NotFoundException("Author not found")
 
-    return author;
+    return author
+
   }
-
+  
   private async safeRemoveAvatarByUrl(fileUrl?: string | null) {
-    if (!fileUrl) return;
-
+   if (!fileUrl) return;
     try {
-      const prevName = basename(fileUrl);
-      const prevPath = join(process.cwd(), 'uploads', 'avatars', prevName);
-      await fs.unlink(prevPath);
-    } catch {
-      // ignore file delete errors
+      const prevName = basename(fileUrl)
+      const prevPath = join (process.cwd(), 'uploads', 'avatars', prevName)
+      await fs.unlink(prevPath)
+    } catch (error) {
+      
     }
   }
+    
+
+ 
+   
 
   async setAvatar(authorId: number, file: Express.Multer.File) {
-    const author = await this.findAuthor(authorId);
-    const publicUrl = `/uploads/avatars/${file.filename}`;
+    const author = await this.findAuthor(authorId)
+    const publicUrl = `/uploads/avatars/${file.filename}`
+
 
     try {
       if (author.author_photo) {
-        await this.safeRemoveAvatarByUrl(author.author_photo);
+        await this.safeRemoveAvatarByUrl(author.author_photo)
       }
 
-      await author.update({ author_photo: publicUrl });
-      return author;
-    } catch (error: unknown) {
-      await this.safeRemoveAvatarByUrl(publicUrl);
-
-      const message =
-        error instanceof Error ? error.message : 'Не удалось сохранить аватар';
-      throw new InternalServerErrorException(message);
+      await author.update({author_photo: publicUrl})
+      return author
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Can not save"
+      throw new InternalServerErrorException(message)
     }
+
+    
   }
 
   async updateAvatar(authorId: number, file: Express.Multer.File) {
@@ -77,11 +79,11 @@ export class FilesService {
       await author.update({ author_photo: null });
 
       return {
-        message: 'Аватар удалён',
+        message: 'Avatar deleted',
       };
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : 'Не удалось удалить аватар';
+        error instanceof Error ? error.message : 'Can not save';
       throw new InternalServerErrorException(message);
     }
   }
