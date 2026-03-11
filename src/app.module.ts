@@ -20,7 +20,7 @@ import { FilesModule } from './files/files.module';
       database: process.env.DB_NAME,
       autoLoadModels: true,
       synchronize: true,
-      sync: { force: true },
+      sync: { force: false },
       logging: false,
     }),
     AuthorModule,

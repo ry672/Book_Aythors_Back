@@ -39,10 +39,7 @@ export class AuthorCreateDto {
   @MinLength(2, { message: 'country should be more than 2' })
   country?: string;
 
-  @ApiProperty()
-  @IsOptional()
-  @IsString()
-  author_photo?: string | undefined;
+ 
 }
 export class FindAuthorQueryDto {
   @ApiPropertyOptional()
