@@ -33,7 +33,7 @@ export class FilesService {
    if (!fileUrl) return;
     try {
       const prevName = basename(fileUrl)
-      const prevPath = join (process.cwd(), 'uploads', 'avatars', prevName)
+      const prevPath = join (process.cwd(), 'uploads', prevName)
       await fs.unlink(prevPath)
     } catch (error) {
       
