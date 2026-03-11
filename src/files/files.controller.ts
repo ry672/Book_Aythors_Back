@@ -56,7 +56,7 @@ export class FilesController {
         const ok = /image\/(png|jpeg|jpg|webp|gif)/i.test(file.mimetype);
         cb(ok ? null : new Error('Only image files are allowed'), ok);
       },
-      limits: { fileSize: 10 * 1024 * 1024 },
+      limits: { fileSize: 20 * 1024 * 1024 },
     }),
   )
   async uploadAvatar(
