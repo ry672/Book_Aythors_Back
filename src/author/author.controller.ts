@@ -11,6 +11,8 @@ import {
   Query,
   UploadedFile,
   UseInterceptors,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { AuthorService } from './author.service';
 import {
@@ -30,7 +32,7 @@ import * as fs from 'fs/promises';
 @ApiTags('author')
 @Controller('author')
 export class AuthorController {
-  constructor(private readonly authorService: AuthorService) {}
+  constructor(private readonly authorService: AuthorService) { }
 
   @ApiOperation({ summary: 'Create author with optional avatar' })
   @ApiConsumes('multipart/form-data')
@@ -74,6 +76,13 @@ export class AuthorController {
         cb(ok ? null : new Error('Only image files are allowed'), ok);
       },
       limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: false,
     }),
   )
   create(
@@ -138,6 +147,13 @@ export class AuthorController {
         cb(ok ? null : new Error('Only image files are allowed'), ok);
       },
       limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: false,
     }),
   )
   update(
