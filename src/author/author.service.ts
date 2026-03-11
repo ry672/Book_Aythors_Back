@@ -87,7 +87,7 @@ export class AuthorService {
   async findByPk(id: number) {
     const author = await this.authorModel.findOne({
       where: { id, is_deleted: false },
-      include: [{ model: this.bookModel, as: 'book', required: false }],
+      include: [{ model: this.bookModel, as: 'books', required: false }],
     });
 
     if (!author) {
