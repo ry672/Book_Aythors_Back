@@ -20,8 +20,8 @@ export class FilesService {
       throw new NotFoundException('Автор не найден');
     }
 
-    const relativePath = `avatars/${file.filename}`;
-    const publicUrl = `/static/${relativePath}`;
+    
+    const publicUrl = `/uploads/avatars/${file.filename}`;
 
     if (author.author_photo) {
       try {
