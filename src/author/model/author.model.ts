@@ -8,7 +8,6 @@ interface AuthorCreate  {
     full_name: string;
     description?: string;
     country?: string;
-    author_photo?: string;
     is_deleted?: boolean;
 }
 
@@ -28,7 +27,7 @@ export class AuthorModel extends Model<AuthorModel, AuthorCreate> {
     declare description?: string;
 
     @Column({type: DataType.STRING(500), allowNull: true, defaultValue: null})
-    declare author_photo?: string; 
+    declare author_photo?: string | null; 
 
     @Column({type: DataType.STRING, allowNull: true})
     declare country?: string;

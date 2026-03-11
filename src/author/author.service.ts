@@ -5,11 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, type WhereOptions, UniqueConstraintError } from 'sequelize';
+import { Op, type WhereOptions } from 'sequelize';
 import { AuthorCreateDto } from './dto/create-author.dto';
 import { UpdateAuthorDto } from './dto/update-author.dto';
 import { AuthorModel } from './model/author.model';
-import { join } from 'path';
+import { basename, join } from 'path';
 import * as fs from 'fs/promises';
 import { BookModel } from 'src/books/model/books.model';
 
@@ -17,7 +17,7 @@ export type FindAuthorQuery = {
   name?: string;
   full_name?: string;
   description?: string;
-  country?: string
+  country?: string;
   search?: string;
   take?: number;
   page?: number;
@@ -32,15 +32,17 @@ export class AuthorService {
 
     @InjectModel(BookModel)
     private readonly bookModel: typeof BookModel,
-  ) { }
+  ) {}
 
-  private async safeRemoveUploadedFile(file?: Express.Multer.File) {
-    if (!file) return;
+  private async safeRemoveFileByUrl(fileUrl?: string | null) {
+    if (!fileUrl) return;
+
     try {
-      const filePath = join(process.cwd(), 'uploads', 'avatars', file.filename);
+      const fileName = basename(fileUrl);
+      const filePath = join(process.cwd(), 'uploads', 'avatars', fileName);
       await fs.unlink(filePath);
     } catch {
-
+      // ignore file delete errors
     }
   }
 
@@ -51,13 +53,12 @@ export class AuthorService {
     if (!name || !fullName) {
       throw new ConflictException('name and full_name are required');
     }
-   
+
     try {
       const author = await this.authorModel.create({
         ...dto,
         name,
         full_name: fullName,
-        author_photo: dto.author_photo ?? undefined,
         is_deleted: false,
       });
 
@@ -74,7 +75,10 @@ export class AuthorService {
       include: [{ model: this.bookModel, as: 'book', required: false }],
     });
 
-    if (!author) throw new NotFoundException('Author not found');
+    if (!author) {
+      throw new NotFoundException('Author not found');
+    }
+
     return author;
   }
 
@@ -82,7 +86,10 @@ export class AuthorService {
     const takeRaw = Number(query.take ?? 10);
     const pageRaw = Number(query.page ?? 1);
 
-    const take = Number.isFinite(takeRaw) ? Math.min(Math.max(takeRaw, 1), 100) : 10;
+    const take = Number.isFinite(takeRaw)
+      ? Math.min(Math.max(takeRaw, 1), 100)
+      : 10;
+
     const page = Number.isFinite(pageRaw) ? Math.max(pageRaw, 1) : 1;
     const offset = (page - 1) * take;
 
@@ -91,15 +98,17 @@ export class AuthorService {
     if (query.name?.trim()) {
       where.name = { [Op.iLike]: `%${query.name.trim()}%` };
     }
+
     if (query.full_name?.trim()) {
       where.full_name = { [Op.iLike]: `%${query.full_name.trim()}%` };
     }
+
     if (query.description?.trim()) {
       where.description = { [Op.iLike]: `%${query.description.trim()}%` };
     }
 
     if (query.country?.trim()) {
-      where.country = { [Op.iLike]: `%${query.country.trim()}%` }
+      where.country = { [Op.iLike]: `%${query.country.trim()}%` };
     }
 
     const q = query.search?.trim();
@@ -125,7 +134,13 @@ export class AuthorService {
     const count = Number(result.count);
     const pages = count === 0 ? 0 : Math.ceil(count / take);
 
-    return { count, rows: result.rows, page, take, pages };
+    return {
+      count,
+      rows: result.rows,
+      page,
+      take,
+      pages,
+    };
   }
 
   async update(id: number, dto: UpdateAuthorDto) {
@@ -133,7 +148,6 @@ export class AuthorService {
 
     const nextName = dto.name?.trim();
     const nextFullName = dto.full_name?.trim();
-
 
     try {
       await author.update({
@@ -144,15 +158,63 @@ export class AuthorService {
 
       return author;
     } catch (error: unknown) {
-
       const message = error instanceof Error ? error.message : 'Update failed';
       throw new InternalServerErrorException(message);
     }
   }
 
+  async setAvatar(authorId: number, file: Express.Multer.File) {
+    const author = await this.findByPk(authorId);
+
+    const publicUrl = `/static/avatars/${file.filename}`;
+
+    try {
+      if (author.author_photo) {
+        await this.safeRemoveFileByUrl(author.author_photo);
+      }
+
+      await author.update({
+        author_photo: publicUrl,
+      });
+
+      return author;
+    } catch (error: unknown) {
+      await this.safeRemoveFileByUrl(publicUrl);
+
+      const message =
+        error instanceof Error ? error.message : 'Avatar update failed';
+      throw new InternalServerErrorException(message);
+    }
+  }
+
+  async removeAvatar(authorId: number) {
+    const author = await this.findByPk(authorId);
+
+    try {
+      if (author.author_photo) {
+        await this.safeRemoveFileByUrl(author.author_photo);
+      }
+
+      await author.update({
+        author_photo: null,
+      });
+
+      return { message: 'Avatar removed' };
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Avatar remove failed';
+      throw new InternalServerErrorException(message);
+    }
+  }
+
   async softremove(id: number) {
-    const author = await this.authorModel.findOne({ where: { id, is_deleted: false } });
-    if (!author) throw new NotFoundException('Author not found or already deleted');
+    const author = await this.authorModel.findOne({
+      where: { id, is_deleted: false },
+    });
+
+    if (!author) {
+      throw new NotFoundException('Author not found or already deleted');
+    }
 
     try {
       await author.update({ is_deleted: true });
@@ -165,9 +227,15 @@ export class AuthorService {
 
   async hardremove(id: number) {
     const author = await this.authorModel.findByPk(id);
-    if (!author) throw new NotFoundException('Author not found');
+    if (!author) {
+      throw new NotFoundException('Author not found');
+    }
 
     try {
+      if (author.author_photo) {
+        await this.safeRemoveFileByUrl(author.author_photo);
+      }
+
       await author.destroy();
       return { message: 'Author fully deleted' };
     } catch (error: unknown) {

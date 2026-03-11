@@ -6,6 +6,8 @@ import { AuthorModule } from './author/author.module';
 import { CategoryModule } from './category/category.module';
 import { BooksModule } from './books/books.module';
 import { ImagekitModule } from './imagekit/imagekit.module';
+import { FilesModule } from './files/files.module';
+
 
 @Module({
   imports: [
@@ -19,13 +21,14 @@ import { ImagekitModule } from './imagekit/imagekit.module';
       database: process.env.DB_NAME,
       autoLoadModels: true,
       synchronize: true,
-      sync: { force: false },
+      sync: { force: true },
       logging: false,
     }),
     AuthorModule,
     CategoryModule,
     BooksModule,
     ImagekitModule,
+    FilesModule,
   ],
 })
 export class AppModule {}
