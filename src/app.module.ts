@@ -5,7 +5,6 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { AuthorModule } from './author/author.module';
 import { CategoryModule } from './category/category.module';
 import { BooksModule } from './books/books.module';
-import { ImagekitModule } from './imagekit/imagekit.module';
 import { FilesModule } from './files/files.module';
 
 
@@ -27,7 +26,6 @@ import { FilesModule } from './files/files.module';
     AuthorModule,
     CategoryModule,
     BooksModule,
-    ImagekitModule,
     FilesModule,
   ],
 })
