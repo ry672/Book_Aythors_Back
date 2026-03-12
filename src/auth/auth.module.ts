@@ -4,12 +4,13 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { AuthorModule } from 'src/author/author.module';
 import { ConfigModule } from '@nestjs/config';
+import { SequelizeModule } from '@nestjs/sequelize';
 
 @Module({
   imports: [
     ConfigModule,
-    AuthorModule,
-    JwtModule.register({}),
+    SequelizeModule.forFeature([AuthorModule]),
+    JwtModule.register({})
   ],
   controllers: [AuthController],
   providers: [AuthService],
