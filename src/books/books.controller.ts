@@ -8,13 +8,18 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { BooksService } from './books.service';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateBookDto} from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { FindBookQuery } from './dto/create-book.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwt.auth.guard';
 
+
+@ApiBearerAuth("access-token")
+@UseGuards(JwtAuthGuard)
 @ApiTags('books')
 @Controller('books')
 export class BooksController {

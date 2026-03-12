@@ -2,12 +2,12 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 import {
-  
+
   IsNumber,
   IsOptional,
   IsString,
   MaxLength,
-  
+
   MinLength,
 } from 'class-validator';
 import { Min } from 'class-validator';
@@ -39,6 +39,16 @@ export class AuthorCreateDto {
   @MinLength(2, { message: 'country should be more than 2' })
   country?: string;
 
+  @ApiProperty({ example: 'ruf7306@gmail.com', description: 'Your email' })
+  @IsString({ message: 'should be string' })
+  email: string;
+
+  @ApiProperty({ example: "qwerty123", description: "Пароль пользователя" })
+  @IsString({ message: "Password must be a string" })
+  @MinLength(6, { message: "Password must be at least 6 characters" })
+  @MaxLength(100, { message: "Password must be less than 100 characters" })
+  password: string;
+
   @ApiPropertyOptional({
     type: 'string',
     format: 'binary',
@@ -46,7 +56,7 @@ export class AuthorCreateDto {
   })
   @IsOptional()
   file?: unknown;
- 
+
 }
 export class FindAuthorQueryDto {
   @ApiPropertyOptional()

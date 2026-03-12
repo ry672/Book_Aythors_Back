@@ -72,6 +72,8 @@ export class AuthorService {
         country: dto.country?.trim() || undefined,
         author_photo: publicUrl,
         is_deleted: false,
+        email: dto.email,
+        password: dto.password,
       });
 
       return author;

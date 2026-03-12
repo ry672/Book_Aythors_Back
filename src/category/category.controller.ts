@@ -8,16 +8,21 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { CategoryService} from './category.service';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CategoryCreateDto } from './dto/create-category.dto';
 import { UpdateACategoryDto } from './dto/update-category.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwt.auth.guard';
 export type FindCategoryQuery = {
   name?: string;
   search?: string;
 }
 
+
+@ApiBearerAuth("access-token")
+@UseGuards(JwtAuthGuard)
 @ApiTags('category')
 @Controller('category')
 export class CategoryController {

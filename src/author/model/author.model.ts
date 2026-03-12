@@ -16,7 +16,10 @@ interface AuthorCreate {
   full_name: string;
   description?: string;
   author_photo?: string | null;
+  hashed_refresh_token: string | null;
   country?: string;
+  email: string;
+  password: string;
   is_deleted?: boolean;
 }
 
@@ -44,6 +47,18 @@ export class AuthorModel extends Model<AuthorModel, AuthorCreate> {
   })
   declare full_name: string;
 
+  @AllowNull(false)
+  @Column({
+    type: DataType.STRING(30),
+  })
+  declare email: string;
+
+  @AllowNull(false)
+  @Column({
+    type: DataType.STRING(30),
+  })
+  declare password: string;
+
   @AllowNull(true)
   @Column({
     type: DataType.STRING(100),
@@ -69,6 +84,10 @@ export class AuthorModel extends Model<AuthorModel, AuthorCreate> {
     defaultValue: false,
   })
   declare is_deleted: boolean;
+
+  @AllowNull(true)
+  @Column(DataType.STRING)
+  declare hashed_refresh_token: string | null;
 
   @HasMany(() => BookModel, {
     foreignKey: 'authorId',

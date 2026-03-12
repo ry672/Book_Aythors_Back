@@ -10,12 +10,14 @@ import {
   Post,
   Query,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { AuthorService } from './author.service';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiOperation,
@@ -28,7 +30,10 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import * as fs from 'fs/promises';
+import { JwtAuthGuard } from 'src/common/guards/jwt.auth.guard';
 
+@ApiBearerAuth("access-token")
+@UseGuards(JwtAuthGuard)
 @ApiTags('author')
 @Controller('author')
 export class AuthorController {
