@@ -86,7 +86,7 @@ export class AuthorService {
 
   async findByPk(id: number) {
     const author = await this.authorModel.findOne({
-      where: { id, is_deleted: false },
+      where: { id },
       include: [{ model: this.bookModel, as: 'books', required: false }],
     });
 
@@ -108,7 +108,7 @@ export class AuthorService {
     const page = Number.isFinite(pageRaw) ? Math.max(pageRaw, 1) : 1;
     const offset = (page - 1) * take;
 
-    const where: WhereOptions<AuthorModel> = { is_deleted: false };
+    const where: WhereOptions<AuthorModel> = {};
 
     if (query.name?.trim()) {
       where.name = { [Op.iLike]: `%${query.name.trim()}%` };
