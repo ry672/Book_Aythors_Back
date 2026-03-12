@@ -49,13 +49,13 @@ export class AuthorModel extends Model<AuthorModel, AuthorCreate> {
 
   @AllowNull(false)
   @Column({
-    type: DataType.STRING(30),
+    type: DataType.STRING(255),
   })
   declare email: string;
 
   @AllowNull(false)
   @Column({
-    type: DataType.STRING(30),
+    type: DataType.STRING(255),
   })
   declare password: string;
 
@@ -86,7 +86,10 @@ export class AuthorModel extends Model<AuthorModel, AuthorCreate> {
   declare is_deleted: boolean;
 
   @AllowNull(true)
-  @Column(DataType.STRING)
+  @Column({
+    type: DataType.STRING(500),
+    defaultValue: null,
+  })
   declare hashed_refresh_token: string | null;
 
   @HasMany(() => BookModel, {

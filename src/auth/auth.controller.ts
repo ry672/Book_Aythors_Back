@@ -1,27 +1,24 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { LoginDto } from './dto/login.dto';
-
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-
-  @Post()
+  @Post('register')
   @ApiOperation({ summary: 'Register' })
-  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 201 })
   register(@Body() registerdto: RegisterDto) {
     return this.authService.register(registerdto);
   }
 
-  @Post()
-  @ApiOperation({ summary: 'Register' })
+  @Post('login')
+  @ApiOperation({ summary: 'Login' })
   @ApiResponse({ status: 200 })
   login(@Body() logindto: LoginDto) {
     return this.authService.login(logindto);
   }
-
-}  
+}

@@ -10,9 +10,11 @@ import { AuthorModel } from 'src/author/model/author.model';
   imports: [
     ConfigModule,
     SequelizeModule.forFeature([AuthorModel]),
-    JwtModule.register({})
+    JwtModule.register({
+      secret: process.env.JWT_ACCESS_SECRET,
+    }),
   ],
   controllers: [AuthController],
   providers: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule { }
