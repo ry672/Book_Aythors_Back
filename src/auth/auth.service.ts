@@ -1,7 +1,13 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/sequelize';
 import * as bcrypt from 'bcrypt';
+import { UniqueConstraintError } from 'sequelize';
 import { AuthorModel } from 'src/author/model/author.model';
 
 @Injectable()
@@ -15,90 +21,155 @@ export class AuthService {
   async register(dto: {
     email: string;
     password: string;
-    name?: string;
-    full_name?: string;
+    name: string;
+    full_name: string;
+    description?: string;
+    country?: string;
   }) {
-    const exists = await this.authorModel.findOne({
-      where: { email: dto.email },
-    });
+    try {
+      const exists = await this.authorModel.findOne({
+        where: { email: dto.email },
+      });
 
-    if (exists) {
-      throw new BadRequestException('Author already exists');
+      if (exists) {
+        throw new BadRequestException('Author already exists');
+      }
+
+      if (!process.env.JWT_ACCESS_SECRET || !process.env.JWT_REFRESH_SECRET) {
+        throw new InternalServerErrorException(
+          'JWT secrets are not configured',
+        );
+      }
+
+      const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+      const author = await this.authorModel.create({
+        email: dto.email.trim().toLowerCase(),
+        name: dto.name.trim(),
+        full_name: dto.full_name.trim(),
+        password: hashedPassword,
+      });
+
+      const tokens = await this.signTokens(author.id, author.email);
+      await this.setRefreshHash(author.id, tokens.refreshToken);
+
+      return {
+        message: 'Register success',
+        author,
+        ...tokens,
+      };
+    } catch (error) {
+      console.error('REGISTER ERROR:', error);
+
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      if (error instanceof UniqueConstraintError) {
+        throw new BadRequestException('Author with this email already exists');
+      }
+
+      throw new InternalServerErrorException('Failed to register author');
     }
-
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
-
-    const author = await this.authorModel.create({
-      email: dto.email,
-      name: "",
-      full_name: "",
-      password: hashedPassword,
-    });
-
-    const tokens = await this.signTokens(author.id, author.email);
-    await this.setRefreshHash(author.id, tokens.refreshToken);
-
-    return {
-      message: 'Register success',
-      author,
-      ...tokens,
-    };
   }
 
   async login(dto: { email: string; password: string }) {
-    const author = await this.authorModel.findOne({
-      where: { email: dto.email },
-    });
+    try {
+      const author = await this.authorModel.findOne({
+        where: { email: dto.email.trim().toLowerCase() },
+      });
 
-    if (!author) {
-      throw new UnauthorizedException('Invalid email or password');
+      if (!author) {
+        throw new UnauthorizedException('Invalid email or password');
+      }
+
+      const isMatch = await bcrypt.compare(dto.password, author.password);
+
+      if (!isMatch) {
+        throw new UnauthorizedException('Invalid email or password');
+      }
+
+      if (!process.env.JWT_ACCESS_SECRET || !process.env.JWT_REFRESH_SECRET) {
+        throw new InternalServerErrorException(
+          'JWT secrets are not configured',
+        );
+      }
+
+      const tokens = await this.signTokens(author.id, author.email);
+      await this.setRefreshHash(author.id, tokens.refreshToken);
+
+      return {
+        message: 'Login success',
+        author,
+        ...tokens,
+      };
+    } catch (error) {
+      console.error('LOGIN ERROR:', error);
+
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof InternalServerErrorException
+      ) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException('Failed to login');
     }
-
-    const isMatch = await bcrypt.compare(dto.password, author.password);
-
-    if (!isMatch) {
-      throw new UnauthorizedException('Invalid email or password');
-    }
-
-    const tokens = await this.signTokens(author.id, author.email);
-    await this.setRefreshHash(author.id, tokens.refreshToken);
-
-    return {
-      message: 'Login success',
-      author,
-      ...tokens,
-    };
   }
 
   async refreshTokens(authorId: number, refreshToken: string) {
-    const author = await this.authorModel.findByPk(authorId);
+    try {
+      const author = await this.authorModel.findByPk(authorId);
 
-    if (!author || !author.hashed_refresh_token) {
-      throw new UnauthorizedException('Access denied');
+      if (!author || !author.hashed_refresh_token) {
+        throw new UnauthorizedException('Access denied');
+      }
+
+      const tokenMatches = await bcrypt.compare(
+        refreshToken,
+        author.hashed_refresh_token,
+      );
+
+      if (!tokenMatches) {
+        throw new UnauthorizedException('Access denied');
+      }
+
+      if (!process.env.JWT_ACCESS_SECRET || !process.env.JWT_REFRESH_SECRET) {
+        throw new InternalServerErrorException(
+          'JWT secrets are not configured',
+        );
+      }
+
+      const tokens = await this.signTokens(author.id, author.email);
+      await this.setRefreshHash(author.id, tokens.refreshToken);
+
+      return tokens;
+    } catch (error) {
+      console.error('REFRESH ERROR:', error);
+
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof InternalServerErrorException
+      ) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException('Failed to refresh token');
     }
-
-    const tokenMatches = await bcrypt.compare(
-      refreshToken,
-      author.hashed_refresh_token,
-    );
-
-    if (!tokenMatches) {
-      throw new UnauthorizedException('Access denied');
-    }
-
-    const tokens = await this.signTokens(author.id, author.email);
-    await this.setRefreshHash(author.id, tokens.refreshToken);
-
-    return tokens;
   }
 
   async logout(authorId: number) {
-    await this.authorModel.update(
-      { hashed_refresh_token: null },
-      { where: { id: authorId } },
-    );
+    try {
+      await this.authorModel.update(
+        { hashed_refresh_token: null },
+        { where: { id: authorId } },
+      );
 
-    return { message: 'Logout success' };
+      return { message: 'Logout success' };
+    } catch (error) {
+      console.error('LOGOUT ERROR:', error);
+      throw new InternalServerErrorException('Failed to logout');
+    }
   }
 
   private async signTokens(authorId: number, email: string) {
