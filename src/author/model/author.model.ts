@@ -50,6 +50,7 @@ export class AuthorModel extends Model<AuthorModel, AuthorCreate> {
   @AllowNull(false)
   @Column({
     type: DataType.STRING(255),
+    unique: true,
   })
   declare email: string;
 
@@ -87,7 +88,7 @@ export class AuthorModel extends Model<AuthorModel, AuthorCreate> {
 
   @AllowNull(true)
   @Column({
-    type: DataType.STRING(500),
+    type: DataType.STRING(255),
     defaultValue: null,
   })
   declare hashed_refresh_token: string | null;
