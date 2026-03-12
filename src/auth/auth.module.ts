@@ -3,9 +3,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { AuthorModule } from 'src/author/author.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule,
     AuthorModule,
     JwtModule.register({}),
   ],
