@@ -1,14 +1,15 @@
-import { Module } from "@nestjs/common";
-import { SequelizeModule } from "@nestjs/sequelize";
-import { AuthorModel } from "src/author/model/author.model";
-import { AuthController } from "./auth.controller";
-import { AuthService } from "./auth.service";
-
+import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
+import { AuthorModule } from 'src/author/author.module';
 
 @Module({
-  imports: [SequelizeModule.forFeature([AuthorModel])],
+  imports: [
+    AuthorModule,
+    JwtModule.register({}),
+  ],
   controllers: [AuthController],
   providers: [AuthService],
-  exports: [AuthService]
 })
 export class AuthModule {}
