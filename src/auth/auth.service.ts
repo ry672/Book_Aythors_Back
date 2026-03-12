@@ -16,7 +16,7 @@ export class AuthService {
     @InjectModel(AuthorModel)
     private readonly authorModel: typeof AuthorModel,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   async register(dto: {
     email: string;
