@@ -30,7 +30,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import * as fs from 'fs/promises';
-import { JwtAuthGuard } from 'src/common/guards/jwt.auth.guard';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 
 @ApiBearerAuth("access-token")
 @UseGuards(JwtAuthGuard)

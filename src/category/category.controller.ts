@@ -14,7 +14,7 @@ import { CategoryService} from './category.service';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CategoryCreateDto } from './dto/create-category.dto';
 import { UpdateACategoryDto } from './dto/update-category.dto';
-import { JwtAuthGuard } from 'src/common/guards/jwt.auth.guard';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 export type FindCategoryQuery = {
   name?: string;
   search?: string;
