@@ -47,6 +47,8 @@ export class AuthService {
         email: dto.email.trim().toLowerCase(),
         name: dto.name.trim(),
         full_name: dto.full_name.trim(),
+        description: dto.description?.trim() ?? '',
+        country: dto.country?.trim() ?? '',
         password: hashedPassword,
       });
 
