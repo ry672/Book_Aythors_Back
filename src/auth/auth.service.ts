@@ -3,8 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/sequelize';
 import * as bcrypt from 'bcrypt';
 import { AuthorModel } from 'src/author/model/author.model';
-// import { LoginDto } from './dto/login.dto';
-// import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
