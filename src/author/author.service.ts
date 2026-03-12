@@ -50,7 +50,7 @@ export class AuthorService {
       const filePath = this.getAvatarDiskPath(fileName);
       await fs.unlink(filePath);
     } catch {
-      // ignore file delete errors
+      // ignore delete errors
     }
   }
 
@@ -66,9 +66,10 @@ export class AuthorService {
 
     try {
       const author = await this.authorModel.create({
-        ...dto,
         name,
         full_name: fullName,
+        description: dto.description?.trim() || undefined,
+        country: dto.country?.trim() || undefined,
         author_photo: publicUrl,
         is_deleted: false,
       });
@@ -86,7 +87,7 @@ export class AuthorService {
 
   async findByPk(id: number) {
     const author = await this.authorModel.findOne({
-      where: { id },
+      where: { id, is_deleted: false },
       include: [{ model: this.bookModel, as: 'books', required: false }],
     });
 
@@ -108,7 +109,9 @@ export class AuthorService {
     const page = Number.isFinite(pageRaw) ? Math.max(pageRaw, 1) : 1;
     const offset = (page - 1) * take;
 
-    const where: WhereOptions<AuthorModel> = {};
+    const where: WhereOptions<AuthorModel> = {
+      is_deleted: false,
+    };
 
     if (query.name?.trim()) {
       where.name = { [Op.iLike]: `%${query.name.trim()}%` };
@@ -142,7 +145,7 @@ export class AuthorService {
       offset,
       order: [['id', 'DESC']],
       include: [{ model: this.bookModel, as: 'books', required: false }],
-      distinct: true
+      distinct: true,
     });
 
     const count = Number(result.count);
@@ -162,18 +165,24 @@ export class AuthorService {
 
     const nextName = dto.name?.trim();
     const nextFullName = dto.full_name?.trim();
+    const nextDescription = dto.description?.trim();
+    const nextCountry = dto.country?.trim();
+
+    const shouldRemovePhoto = dto.remove_photo === 'true';
     const newPhotoUrl = file ? this.getAvatarPublicUrl(file.filename) : undefined;
     const oldPhotoUrl = author.author_photo;
 
     try {
       await author.update({
-        ...dto,
         ...(nextName !== undefined ? { name: nextName } : {}),
         ...(nextFullName !== undefined ? { full_name: nextFullName } : {}),
+        ...(dto.description !== undefined ? { description: nextDescription || '' } : {}),
+        ...(dto.country !== undefined ? { country: nextCountry || '' } : {}),
+        ...(shouldRemovePhoto ? { author_photo: null } : {}),
         ...(newPhotoUrl !== undefined ? { author_photo: newPhotoUrl } : {}),
       });
 
-      if (newPhotoUrl && oldPhotoUrl) {
+      if ((shouldRemovePhoto || newPhotoUrl) && oldPhotoUrl) {
         await this.safeRemoveFileByUrl(oldPhotoUrl);
       }
 

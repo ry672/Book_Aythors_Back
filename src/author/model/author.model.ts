@@ -70,7 +70,10 @@ export class AuthorModel extends Model<AuthorModel, AuthorCreate> {
   })
   declare is_deleted: boolean;
 
-  @HasMany(() => BookModel)
+  @HasMany(() => BookModel, {
+    foreignKey: 'authorId',
+    as: 'books',
+  })
   declare books: BookModel[];
 
   @CreatedAt
