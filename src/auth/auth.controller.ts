@@ -1,8 +1,10 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { CurrentAuthor} from '../common/decorators/common.author.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -20,5 +22,13 @@ export class AuthController {
   @ApiResponse({ status: 200 })
   login(@Body() logindto: LoginDto) {
     return this.authService.login(logindto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  @ApiOperation({ summary: 'Logout' })
+  @ApiResponse({ status: 200 })
+  logout(@CurrentAuthor() user: { id: number; email: string }) {
+    return this.authService.logout(user.id);
   }
 }

@@ -192,6 +192,7 @@ export class AuthService {
       refreshToken,
     };
   }
+  
 
   private async setRefreshHash(authorId: number, refreshToken: string) {
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 7);
