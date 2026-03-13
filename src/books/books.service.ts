@@ -6,6 +6,9 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, Sequelize, type WhereOptions } from 'sequelize';
+import { basename, join } from 'path';
+import * as fs from 'fs/promises';
+
 import { BookModel } from './model/books.model';
 import { AuthorModel } from 'src/author/model/author.model';
 import { CategoryModel } from 'src/category/model/category.model';
@@ -15,15 +18,14 @@ import { UpdateBookDto } from './dto/update-book.dto';
 type FindBookQuery = {
   name?: string;
   description?: string;
-  price?: string;     
+  price?: string;
   link?: string;
   search?: string;
   take?: number;
   page?: number;
   tags?: string;
-
-  minPrice?: string;   
-  maxPrice?: string;   
+  minPrice?: string;
+  maxPrice?: string;
 };
 
 @Injectable()
@@ -34,16 +36,44 @@ export class BooksService {
     @InjectModel(CategoryModel) private readonly categoryModel: typeof CategoryModel,
   ) {}
 
-  async create(dto: CreateBookDto) {
+  private getPhotosPublicUrl(fileName: string) {
+    return `/uploads/books/${fileName}`;
+  }
+
+  private getPhotosDiskPath(fileName: string) {
+    return join(process.cwd(), 'uploads', 'books', fileName);
+  }
+
+  private async safeRemoveFileByUrl(fileUrl?: string | null) {
+    if (!fileUrl) return;
+
+    try {
+      const fileName = basename(fileUrl);
+      const filePath = this.getPhotosDiskPath(fileName);
+      await fs.unlink(filePath);
+    } catch {
+      // ignore delete errors
+    }
+  }
+
+  async create(dto: CreateBookDto, file?: Express.Multer.File) {
     const author = await this.authorModel.findByPk(dto.authorId);
     if (!author) throw new BadRequestException('Author not found');
 
     const category = await this.categoryModel.findByPk(dto.categoryId);
     if (!category) throw new BadRequestException('Category not found');
 
+    const publicUrl = file ? this.getPhotosPublicUrl(file.filename) : null;
+
     try {
-      return await this.bookModel.create({ ...dto });
+      return await this.bookModel.create({
+        ...dto,
+        photos: publicUrl,
+      });
     } catch (error: unknown) {
+      if (publicUrl) {
+        await this.safeRemoveFileByUrl(publicUrl);
+      }
       const message = error instanceof Error ? error.message : 'Create failed';
       throw new InternalServerErrorException(message);
     }
@@ -56,6 +86,7 @@ export class BooksService {
         { model: this.categoryModel, as: 'category' },
       ],
     });
+
     if (!book) throw new NotFoundException('Book not found');
     return book;
   }
@@ -85,22 +116,9 @@ export class BooksService {
       where.link = { [Op.iLike]: `%${query.link.trim()}%` };
     }
 
-
-
-
     if (query.price !== undefined && query.price !== '') {
       const exact = Number(query.price);
       if (!Number.isNaN(exact)) where.price = exact;
-    } else {
-      // const min = query.minPrice !== undefined ? Number(query.minPrice) : NaN;
-      // const max = query.maxPrice !== undefined ? Number(query.maxPrice) : NaN;
-
-      // if (!Number.isNaN(min) || !Number.isNaN(max)) {
-      //   where.price = {
-      //     ...(Number.isNaN(min) ? {} : { [Op.gte]: min }),
-      //     ...(Number.isNaN(max) ? {} : { [Op.lte]: max }),
-      //   } as any;
-      // }
     }
 
     const q = query.search?.trim();
@@ -139,20 +157,54 @@ export class BooksService {
     };
   }
 
-  async update(id: number, dto: UpdateBookDto) {
+  async update(id: number, dto: UpdateBookDto, file?: Express.Multer.File) {
     const book = await this.findByPk(id);
 
+    if (dto.authorId !== undefined) {
+      const author = await this.authorModel.findByPk(dto.authorId);
+      if (!author) throw new BadRequestException('Author not found');
+    }
+
+    if (dto.categoryId !== undefined) {
+      const category = await this.categoryModel.findByPk(dto.categoryId);
+      if (!category) throw new BadRequestException('Category not found');
+    }
+
+    const shouldRemovePhoto = dto.remove_photos === 'true';
+    const newPhotoUrl = file ? this.getPhotosPublicUrl(file.filename) : undefined;
+    const oldPhotoUrl = book.photos;
+
     try {
-      await book.update(dto);
+      await book.update({
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.price !== undefined ? { price: dto.price } : {}),
+        ...(dto.description !== undefined ? { description: dto.description } : {}),
+        ...(dto.link !== undefined ? { link: dto.link } : {}),
+        ...(dto.authorId !== undefined ? { authorId: dto.authorId } : {}),
+        ...(dto.categoryId !== undefined ? { categoryId: dto.categoryId } : {}),
+        ...(shouldRemovePhoto ? { photos: null } : {}),
+        ...(newPhotoUrl !== undefined ? { photos: newPhotoUrl } : {}),
+      });
+
+      if ((shouldRemovePhoto || newPhotoUrl) && oldPhotoUrl) {
+        await this.safeRemoveFileByUrl(oldPhotoUrl);
+      }
+
       return book;
     } catch (error: unknown) {
+      if (newPhotoUrl) {
+        await this.safeRemoveFileByUrl(newPhotoUrl);
+      }
       const message = error instanceof Error ? error.message : 'Update failed';
       throw new InternalServerErrorException(message);
     }
   }
 
   async softremove(id: number) {
-    const book = await this.bookModel.findOne({ where: { id, is_deleted: false } });
+    const book = await this.bookModel.findOne({
+      where: { id, is_deleted: false },
+    });
+
     if (!book) throw new NotFoundException('Book not found or already deleted');
 
     try {
@@ -169,6 +221,10 @@ export class BooksService {
     if (!book) throw new NotFoundException('Book not found');
 
     try {
+      if (book.photos) {
+        await this.safeRemoveFileByUrl(book.photos);
+      }
+
       await book.destroy();
       return { message: 'Book fully deleted' };
     } catch (error: unknown) {

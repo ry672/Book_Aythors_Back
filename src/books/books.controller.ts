@@ -8,39 +8,102 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import * as fs from 'fs/promises';
+
 import { BooksService } from './books.service';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { CreateBookDto} from './dto/create-book.dto';
+import { CreateBookDto, FindBookQuery } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
-import { FindBookQuery } from './dto/create-book.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 
-
-@ApiBearerAuth("access-token")
+@ApiBearerAuth('access-token')
 @UseGuards(JwtAuthGuard)
 @ApiTags('books')
 @Controller('books')
 export class BooksController {
   constructor(private readonly booksService: BooksService) {}
 
-  @ApiOperation({ summary: 'Create book for author' })
+  @ApiOperation({ summary: 'Create book with optional photo' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['name', 'description', 'price', 'link', 'authorId', 'categoryId'],
+      properties: {
+        name: { type: 'string', example: 'Book 1' },
+        description: { type: 'string', example: 'Some description...' },
+        price: { type: 'number', example: 100 },
+        link: { type: 'string', example: 'https://example.com' },
+        authorId: { type: 'number', example: 1 },
+        categoryId: { type: 'number', example: 1 },
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Book photo file',
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 201 })
   @Post()
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: async (_req, _file, cb) => {
+          try {
+            const dir = join(process.cwd(), 'uploads', 'books');
+            await fs.mkdir(dir, { recursive: true });
+            cb(null, dir);
+          } catch (e) {
+            cb(e as Error, '');
+          }
+        },
+        filename: (_req, file, cb) => {
+          const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+          cb(null, `${unique}${extname(file.originalname).toLowerCase()}`);
+        },
+      }),
+      fileFilter: (_req, file, cb) => {
+        const ok = /image\/(png|jpeg|jpg|webp|gif)/i.test(file.mimetype);
+        cb(ok ? null : new Error('Only image files are allowed'), ok);
+      },
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: false,
+    }),
+  )
   create(
     @Body() dto: CreateBookDto,
+    @UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.booksService.create(dto);
+    return this.booksService.create(dto, file);
   }
 
-  @ApiOperation({ summary: 'Get books (search includes deleted)' })
+  @ApiOperation({ summary: 'Get books' })
   @ApiResponse({ status: 200 })
   @Get()
-  find(
-    @Query() search: FindBookQuery
-
-  ) {
+  find(@Query() search: FindBookQuery) {
     return this.booksService.findMany(search);
   }
 
@@ -51,11 +114,66 @@ export class BooksController {
     return this.booksService.findByPk(id);
   }
 
-  @ApiOperation({ summary: 'Update book' })
+  @ApiOperation({ summary: 'Update book with optional photo' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', example: 'Book 1' },
+        description: { type: 'string', example: 'Some description...' },
+        price: { type: 'number', example: 100 },
+        link: { type: 'string', example: 'https://example.com' },
+        authorId: { type: 'number', example: 1 },
+        categoryId: { type: 'number', example: 1 },
+        remove_photos: { type: 'string', example: 'true' },
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Book photo file',
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 200 })
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateBookDto) {
-    return this.booksService.update(id, dto);
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: async (_req, _file, cb) => {
+          try {
+            const dir = join(process.cwd(), 'uploads', 'books');
+            await fs.mkdir(dir, { recursive: true });
+            cb(null, dir);
+          } catch (e) {
+            cb(e as Error, '');
+          }
+        },
+        filename: (_req, file, cb) => {
+          const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+          cb(null, `${unique}${extname(file.originalname).toLowerCase()}`);
+        },
+      }),
+      fileFilter: (_req, file, cb) => {
+        const ok = /image\/(png|jpeg|jpg|webp|gif)/i.test(file.mimetype);
+        cb(ok ? null : new Error('Only image files are allowed'), ok);
+      },
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: false,
+    }),
+  )
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateBookDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.booksService.update(id, dto, file);
   }
 
   @ApiOperation({ summary: 'Delete book soft' })

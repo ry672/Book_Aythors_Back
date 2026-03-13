@@ -32,6 +32,15 @@ export class CreateBookDto {
   @IsString()
   link: string;
 
+  @ApiPropertyOptional({
+    type: 'string',
+    format: 'binary',
+    description: 'Author avatar file',
+  })
+  @IsOptional()
+  file?: unknown;
+
+
   @ApiProperty({example: 1, description: 'authorId'})
   @Type(() => Number)
   @IsInt()
