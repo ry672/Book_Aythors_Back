@@ -17,7 +17,8 @@ export class CreateBookDto {
   @MinLength(2)
   name: string;
 
-  @ApiProperty({ example: 100, description: 'Book price' })
+  @ApiPropertyOptional({ example: 100 })
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   price: number;
