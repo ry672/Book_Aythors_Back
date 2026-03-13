@@ -25,7 +25,7 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @Post('logout')
   @ApiOperation({ summary: 'Logout' })
   @ApiResponse({ status: 200 })
