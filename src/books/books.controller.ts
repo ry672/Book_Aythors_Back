@@ -8,7 +8,7 @@ import {
   Patch,
   Post,
   Query,
-  UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
   UsePipes,
@@ -22,7 +22,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import * as fs from 'fs/promises';
@@ -39,12 +39,20 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 export class BooksController {
   constructor(private readonly booksService: BooksService) {}
 
-  @ApiOperation({ summary: 'Create book with optional photo' })
+  @ApiOperation({ summary: 'Create book with 1-10 photos' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
       type: 'object',
-      required: ['name', 'description', 'price', 'link', 'authorId', 'categoryId'],
+      required: [
+        'name',
+        'description',
+        'price',
+        'link',
+        'authorId',
+        'categoryId',
+        'files',
+      ],
       properties: {
         name: { type: 'string', example: 'Book 1' },
         description: { type: 'string', example: 'Some description...' },
@@ -52,10 +60,12 @@ export class BooksController {
         link: { type: 'string', example: 'https://example.com' },
         authorId: { type: 'number', example: 1 },
         categoryId: { type: 'number', example: 1 },
-        file: {
-          type: 'string',
-          format: 'binary',
-          description: 'Book photo file',
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
         },
       },
     },
@@ -63,7 +73,7 @@ export class BooksController {
   @ApiResponse({ status: 201 })
   @Post()
   @UseInterceptors(
-    FileInterceptor('file', {
+    FilesInterceptor('files', 10, {
       storage: diskStorage({
         destination: async (_req, _file, cb) => {
           try {
@@ -83,7 +93,10 @@ export class BooksController {
         const ok = /image\/(png|jpeg|jpg|webp|gif)/i.test(file.mimetype);
         cb(ok ? null : new Error('Only image files are allowed'), ok);
       },
-      limits: { fileSize: 5 * 1024 * 1024 },
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+        files: 10,
+      },
     }),
   )
   @UsePipes(
@@ -95,9 +108,9 @@ export class BooksController {
   )
   create(
     @Body() dto: CreateBookDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFiles() files?: Express.Multer.File[],
   ) {
-    return this.booksService.create(dto, file);
+    return this.booksService.create(dto, files);
   }
 
   @ApiOperation({ summary: 'Get books' })
@@ -114,7 +127,7 @@ export class BooksController {
     return this.booksService.findByPk(id);
   }
 
-  @ApiOperation({ summary: 'Update book with optional photo' })
+  @ApiOperation({ summary: 'Update book with optional photos' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -127,10 +140,12 @@ export class BooksController {
         authorId: { type: 'number', example: 1 },
         categoryId: { type: 'number', example: 1 },
         remove_photos: { type: 'string', example: 'true' },
-        file: {
-          type: 'string',
-          format: 'binary',
-          description: 'Book photo file',
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
         },
       },
     },
@@ -138,7 +153,7 @@ export class BooksController {
   @ApiResponse({ status: 200 })
   @Patch(':id')
   @UseInterceptors(
-    FileInterceptor('file', {
+    FilesInterceptor('files', 10, {
       storage: diskStorage({
         destination: async (_req, _file, cb) => {
           try {
@@ -158,7 +173,10 @@ export class BooksController {
         const ok = /image\/(png|jpeg|jpg|webp|gif)/i.test(file.mimetype);
         cb(ok ? null : new Error('Only image files are allowed'), ok);
       },
-      limits: { fileSize: 5 * 1024 * 1024 },
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+        files: 10,
+      },
     }),
   )
   @UsePipes(
@@ -171,9 +189,9 @@ export class BooksController {
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateBookDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFiles() files?: Express.Multer.File[],
   ) {
-    return this.booksService.update(id, dto, file);
+    return this.booksService.update(id, dto, files);
   }
 
   @ApiOperation({ summary: 'Delete book soft' })

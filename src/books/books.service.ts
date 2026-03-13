@@ -56,24 +56,33 @@ export class BooksService {
     }
   }
 
-  async create(dto: CreateBookDto, file?: Express.Multer.File) {
+  private async safeRemoveManyFiles(fileUrls?: string[] | null) {
+    if (!fileUrls?.length) return;
+    await Promise.all(fileUrls.map((url) => this.safeRemoveFileByUrl(url)));
+  }
+
+  async create(dto: CreateBookDto, files?: Express.Multer.File[]) {
     const author = await this.authorModel.findByPk(dto.authorId);
     if (!author) throw new BadRequestException('Author not found');
 
     const category = await this.categoryModel.findByPk(dto.categoryId);
     if (!category) throw new BadRequestException('Category not found');
 
-    const publicUrl = file ? this.getPhotosPublicUrl(file.filename) : null;
+    const photoUrls =
+      files?.map((file) => this.getPhotosPublicUrl(file.filename)) ?? [];
+
+    if (photoUrls.length < 1 || photoUrls.length > 10) {
+      await this.safeRemoveManyFiles(photoUrls);
+      throw new BadRequestException('Book must have from 1 to 10 photos');
+    }
 
     try {
       return await this.bookModel.create({
         ...dto,
-        photos: publicUrl,
+        photos: photoUrls,
       });
     } catch (error: unknown) {
-      if (publicUrl) {
-        await this.safeRemoveFileByUrl(publicUrl);
-      }
+      await this.safeRemoveManyFiles(photoUrls);
       const message = error instanceof Error ? error.message : 'Create failed';
       throw new InternalServerErrorException(message);
     }
@@ -157,7 +166,7 @@ export class BooksService {
     };
   }
 
-  async update(id: number, dto: UpdateBookDto, file?: Express.Multer.File) {
+  async update(id: number, dto: UpdateBookDto, files?: Express.Multer.File[]) {
     const book = await this.findByPk(id);
 
     if (dto.authorId !== undefined) {
@@ -170,9 +179,24 @@ export class BooksService {
       if (!category) throw new BadRequestException('Category not found');
     }
 
-    const shouldRemovePhoto = dto.remove_photos === 'true';
-    const newPhotoUrl = file ? this.getPhotosPublicUrl(file.filename) : undefined;
-    const oldPhotoUrl = book.photos;
+    const shouldRemovePhotos = dto.remove_photos === 'true';
+    const newPhotoUrls =
+      files?.map((file) => this.getPhotosPublicUrl(file.filename)) ?? [];
+    const oldPhotoUrls = book.photos ?? [];
+
+    if (newPhotoUrls.length > 10) {
+      await this.safeRemoveManyFiles(newPhotoUrls);
+      throw new BadRequestException('Maximum 10 photos allowed');
+    }
+
+    const finalPhotos = shouldRemovePhotos
+      ? newPhotoUrls
+      : [...oldPhotoUrls, ...newPhotoUrls];
+
+    if (finalPhotos.length > 10) {
+      await this.safeRemoveManyFiles(newPhotoUrls);
+      throw new BadRequestException('Book must have from 1 to 10 photos');
+    }
 
     try {
       await book.update({
@@ -182,19 +206,19 @@ export class BooksService {
         ...(dto.link !== undefined ? { link: dto.link } : {}),
         ...(dto.authorId !== undefined ? { authorId: dto.authorId } : {}),
         ...(dto.categoryId !== undefined ? { categoryId: dto.categoryId } : {}),
-        ...(shouldRemovePhoto ? { photos: null } : {}),
-        ...(newPhotoUrl !== undefined ? { photos: newPhotoUrl } : {}),
+        ...(shouldRemovePhotos ? { photos: newPhotoUrls } : {}),
+        ...(!shouldRemovePhotos && newPhotoUrls.length
+          ? { photos: finalPhotos }
+          : {}),
       });
 
-      if ((shouldRemovePhoto || newPhotoUrl) && oldPhotoUrl) {
-        await this.safeRemoveFileByUrl(oldPhotoUrl);
+      if (shouldRemovePhotos && oldPhotoUrls.length) {
+        await this.safeRemoveManyFiles(oldPhotoUrls);
       }
 
       return book;
     } catch (error: unknown) {
-      if (newPhotoUrl) {
-        await this.safeRemoveFileByUrl(newPhotoUrl);
-      }
+      await this.safeRemoveManyFiles(newPhotoUrls);
       const message = error instanceof Error ? error.message : 'Update failed';
       throw new InternalServerErrorException(message);
     }
@@ -221,10 +245,7 @@ export class BooksService {
     if (!book) throw new NotFoundException('Book not found');
 
     try {
-      if (book.photos) {
-        await this.safeRemoveFileByUrl(book.photos);
-      }
-
+      await this.safeRemoveManyFiles(book.photos ?? []);
       await book.destroy();
       return { message: 'Book fully deleted' };
     } catch (error: unknown) {

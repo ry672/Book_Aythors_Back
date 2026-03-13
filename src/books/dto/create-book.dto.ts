@@ -39,7 +39,7 @@ export class CreateBookDto {
     description: 'Author avatar file',
   })
   @IsOptional()
-  file?: unknown;
+  files?: unknown[];
 
 
   @ApiProperty({example: 1, description: 'authorId'})
