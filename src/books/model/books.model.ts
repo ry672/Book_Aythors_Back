@@ -20,7 +20,7 @@ interface BookCreate {
   description: string;
   link: string;
   is_deleted?: boolean;
-  photos?: string[] | null;
+  photos?: string[];
 }
 
 @Table({ tableName: 'books', timestamps: true, underscored: true })
@@ -62,7 +62,7 @@ export class BookModel extends Model<BookModel, BookCreate> {
     type: DataType.STRING(500),
     defaultValue: null,
   })
-  declare photos?: string[] | null;
+  declare photos?: string[];
 
   @BelongsTo(() => AuthorModel, { foreignKey: 'authorId' })
   declare author: AuthorModel;
