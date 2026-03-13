@@ -32,7 +32,7 @@ export class AuthService {
       });
 
       if (exists) {
-        throw new BadRequestException('Author already exists');
+        throw new BadRequestException('Email already exists');
       }
 
       if (!process.env.JWT_ACCESS_SECRET || !process.env.JWT_REFRESH_SECRET) {
