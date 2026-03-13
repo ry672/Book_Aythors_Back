@@ -1,10 +1,10 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { CurrentAuthor} from '../common/decorators/common.author.decorator';
+import { CurrentAuthor } from '../common/decorators/common.author.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -25,6 +25,7 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Post('logout')
   @ApiOperation({ summary: 'Logout' })
   @ApiResponse({ status: 200 })
