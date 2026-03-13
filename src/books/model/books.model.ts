@@ -57,12 +57,12 @@ export class BookModel extends Model<BookModel, BookCreate> {
   @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
   declare is_deleted?: boolean;
 
-  @AllowNull(true)
+  @AllowNull(false)
   @Column({
-    type: DataType.STRING(500),
-    defaultValue: null,
+    type: DataType.ARRAY(DataType.STRING),
+    defaultValue: [],
   })
-  declare photos?: string[];
+  declare photos: string[];
 
   @BelongsTo(() => AuthorModel, { foreignKey: 'authorId' })
   declare author: AuthorModel;
