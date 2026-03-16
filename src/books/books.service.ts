@@ -61,6 +61,53 @@ export class BooksService {
     await Promise.all(fileUrls.map((url) => this.safeRemoveFileByUrl(url)));
   }
 
+  private normalizeRemovePhotoUrls(
+    value?: string | string[] | null,
+  ): string[] {
+    if (!value) return [];
+
+    if (Array.isArray(value)) {
+      return [...new Set(value.map((item) => item.trim()).filter(Boolean))];
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+
+    // JSON array string: ["url1","url2"]
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return [
+            ...new Set(
+              parsed
+                .filter((item): item is string => typeof item === 'string')
+                .map((item) => item.trim())
+                .filter(Boolean),
+            ),
+          ];
+        }
+      } catch {
+        throw new BadRequestException('remove_photo_urls has invalid JSON');
+      }
+    }
+
+    // comma separated string: url1,url2
+    if (trimmed.includes(',')) {
+      return [
+        ...new Set(
+          trimmed
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean),
+        ),
+      ];
+    }
+
+    // single string
+    return [trimmed];
+  }
+
   async create(dto: CreateBookDto, files?: Express.Multer.File[]) {
     const author = await this.authorModel.findByPk(dto.authorId);
     if (!author) throw new BadRequestException('Author not found');
@@ -179,21 +226,50 @@ export class BooksService {
       if (!category) throw new BadRequestException('Category not found');
     }
 
-    const shouldRemovePhotos = dto.remove_photos === 'true';
+    const shouldRemoveAllPhotos = dto.remove_photos === 'true';
+
+    const removePhotoUrls = this.normalizeRemovePhotoUrls(
+      dto.remove_photo_urls,
+    );
+
+    const oldPhotoUrls = book.photos ?? [];
     const newPhotoUrls =
       files?.map((file) => this.getPhotosPublicUrl(file.filename)) ?? [];
-    const oldPhotoUrls = book.photos ?? [];
 
     if (newPhotoUrls.length > 10) {
       await this.safeRemoveManyFiles(newPhotoUrls);
       throw new BadRequestException('Maximum 10 photos allowed');
     }
 
-    const finalPhotos = shouldRemovePhotos
-      ? newPhotoUrls
-      : [...oldPhotoUrls, ...newPhotoUrls];
+    const invalidRemoveUrls = removePhotoUrls.filter(
+      (url) => !oldPhotoUrls.includes(url),
+    );
 
-    if (finalPhotos.length > 10) {
+    if (invalidRemoveUrls.length > 0) {
+      await this.safeRemoveManyFiles(newPhotoUrls);
+      throw new BadRequestException(
+        `Some photos do not belong to this book: ${invalidRemoveUrls.join(', ')}`,
+      );
+    }
+
+    let keptOldPhotos: string[] = [];
+    let removedOldPhotos: string[] = [];
+
+    if (shouldRemoveAllPhotos) {
+      keptOldPhotos = [];
+      removedOldPhotos = [...oldPhotoUrls];
+    } else {
+      keptOldPhotos = oldPhotoUrls.filter(
+        (url) => !removePhotoUrls.includes(url),
+      );
+      removedOldPhotos = oldPhotoUrls.filter((url) =>
+        removePhotoUrls.includes(url),
+      );
+    }
+
+    const finalPhotos = [...keptOldPhotos, ...newPhotoUrls];
+
+    if (finalPhotos.length < 1 || finalPhotos.length > 10) {
       await this.safeRemoveManyFiles(newPhotoUrls);
       throw new BadRequestException('Book must have from 1 to 10 photos');
     }
@@ -206,17 +282,14 @@ export class BooksService {
         ...(dto.link !== undefined ? { link: dto.link } : {}),
         ...(dto.authorId !== undefined ? { authorId: dto.authorId } : {}),
         ...(dto.categoryId !== undefined ? { categoryId: dto.categoryId } : {}),
-        ...(shouldRemovePhotos ? { photos: newPhotoUrls } : {}),
-        ...(!shouldRemovePhotos && newPhotoUrls.length
-          ? { photos: finalPhotos }
-          : {}),
+        photos: finalPhotos,
       });
 
-      if (shouldRemovePhotos && oldPhotoUrls.length) {
-        await this.safeRemoveManyFiles(oldPhotoUrls);
+      if (removedOldPhotos.length > 0) {
+        await this.safeRemoveManyFiles(removedOldPhotos);
       }
 
-      return book;
+      return await this.findByPk(id);
     } catch (error: unknown) {
       await this.safeRemoveManyFiles(newPhotoUrls);
       const message = error instanceof Error ? error.message : 'Update failed';

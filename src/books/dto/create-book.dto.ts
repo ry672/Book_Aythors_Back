@@ -1,60 +1,102 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsInt,
   IsNumber,
   IsOptional,
   IsString,
+  IsUrl,
   MaxLength,
   Min,
   MinLength,
 } from 'class-validator';
 
 export class CreateBookDto {
-  @ApiProperty({ example: 'Clean Code', description: 'Book name' })
+  @ApiProperty({
+    example: 'Clean Code',
+    description: 'Book name',
+  })
   @IsString()
   @MaxLength(50)
   @MinLength(2)
   name: string;
 
-  @ApiPropertyOptional({ example: 100 })
+  @ApiProperty({
+    example: 100,
+    description: 'Book price',
+  })
   @Type(() => Number)
   @IsInt()
   @Min(0)
   price: number;
 
-  @ApiProperty({ example: 'Good book about code...', description: 'Description' })
+  @ApiProperty({
+    example: 'Good book about code...',
+    description: 'Book description',
+  })
   @IsString()
   @MaxLength(200)
   @MinLength(10)
   description: string;
 
-  @ApiProperty({ example: 'https://example.com', description: 'Link to book' })
+  @ApiProperty({
+    example: 'https://example.com',
+    description: 'Link to book',
+  })
   @IsString()
+  @IsUrl(
+    {},
+    {
+      message: 'link must be a valid URL',
+    },
+  )
   link: string;
 
   @ApiPropertyOptional({
-    type: 'string',
-    format: 'binary',
-    description: 'Author avatar file',
+    type: 'array',
+    items: {
+      type: 'string',
+      format: 'binary',
+    },
+    description: 'Book photos (1 to 10 files)',
   })
   @IsOptional()
   files?: unknown[];
 
-
-  @ApiProperty({example: 1, description: 'authorId'})
+  @ApiProperty({
+    example: 1,
+    description: 'authorId',
+  })
   @Type(() => Number)
   @IsInt()
   authorId: number;
 
-  @ApiProperty({example: 1, description: "categoryId"})
+  @ApiProperty({
+    example: 1,
+    description: 'categoryId',
+  })
   @Type(() => Number)
   @IsInt()
   categoryId: number;
-  
-  
 }
 
+export class UpdateBookDto extends PartialType(CreateBookDto) {
+  @ApiPropertyOptional({
+    example: 'true',
+    description: 'Remove all old photos before saving new ones',
+  })
+  @IsOptional()
+  @IsString()
+  remove_photos?: string;
+
+  @ApiPropertyOptional({
+    example: '["/uploads/books/1711-a.jpg","/uploads/books/1711-b.jpg"]',
+    description:
+      'Specific old photo URLs to remove. Can be JSON string, single string, or comma-separated string.',
+  })
+  @IsOptional()
+  remove_photo_urls?: string | string[];
+}
 
 export class FindBookQuery {
   @ApiPropertyOptional()
@@ -75,8 +117,7 @@ export class FindBookQuery {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  price?: string; 
-
+  price?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -102,14 +143,20 @@ export class FindBookQuery {
   @IsString()
   @MinLength(1)
   tags?: string;
-  
-  // @ApiPropertyOptional()
-  // @IsOptional()
-  // @IsString()
-  // minPrice?: string;
 
-  // @ApiPropertyOptional()
-  // @IsOptional()
-  // @IsString()
-  // maxPrice?: string;
+  @ApiPropertyOptional({
+    example: '10',
+    description: 'Minimum price filter',
+  })
+  @IsOptional()
+  @IsString()
+  minPrice?: string;
+
+  @ApiPropertyOptional({
+    example: '500',
+    description: 'Maximum price filter',
+  })
+  @IsOptional()
+  @IsString()
+  maxPrice?: string;
 }
