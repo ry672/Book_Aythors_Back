@@ -15,27 +15,27 @@ import { Min } from 'class-validator';
 export class AuthorCreateDto {
   @ApiProperty({ example: 'Rufina', description: 'Your name' })
   @IsString({ message: 'should be string' })
-  @MaxLength(30, { message: 'should be less than 10' })
+  @MaxLength(30, { message: 'name should be less than 30' })
   @MinLength(2, { message: 'name should be more than 2' })
   name: string;
 
   @ApiProperty({ example: 'Garaeva', description: 'Your fullname' })
   @IsString({ message: 'should be string' })
-  @MaxLength(30, { message: 'should be less than 30' })
+  @MaxLength(30, { message: 'full_name should be less than 30' })
   @MinLength(3, { message: 'full_name should be more than 3' })
   full_name: string;
 
   @ApiProperty({ example: 'Some bio...', description: 'Your info', required: false })
   @IsOptional()
   @IsString({ message: 'should be string' })
-  @MaxLength(100, { message: 'should be less than 100' })
-  @MinLength(5, { message: 'should be more than 10' })
+  @MaxLength(100, { message: 'description should be less than 100' })
+  @MinLength(5, { message: 'description should be more than 5' })
   description?: string;
 
   @ApiProperty({ example: 'Tashkent', description: 'Your country', required: false })
   @IsOptional()
   @IsString({ message: 'should be string' })
-  @MaxLength(30, { message: 'should be less than 30' })
+  @MaxLength(30, { message: 'countryshould be less than 30' })
   @MinLength(2, { message: 'country should be more than 2' })
   country?: string;
 

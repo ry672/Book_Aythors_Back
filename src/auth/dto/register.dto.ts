@@ -4,7 +4,7 @@ import { IsOptional, IsString, MaxLength, MinLength } from "class-validator";
 export class RegisterDto {
     @ApiProperty({ example: 'Rufina', description: 'Your name' })
     @IsString({ message: 'should be string' })
-    @MaxLength(30, { message: 'name should be less than 10' })
+    @MaxLength(30, { message: 'name should be less than 30' })
     @MinLength(2, { message: 'name should be more than 2' })
     name: string;
 
