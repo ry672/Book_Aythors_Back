@@ -19,7 +19,7 @@ import { AuthModule } from './auth/auth.module';
       database: process.env.DB_NAME,
       autoLoadModels: true,
       synchronize: true,
-      sync: { force: false },
+      sync: { force: true },
       logging: false,
     }),
     AuthorModule,
