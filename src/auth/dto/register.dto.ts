@@ -24,7 +24,7 @@ export class RegisterDto {
     @ApiProperty({ example: 'Tashkent', description: 'Your country', required: false })
     @IsOptional()
     @IsString({ message: 'should be string' })
-    @MaxLength(30, { message: 'should be less than 30' })
+    @MaxLength(30, { message: 'countryshould be less than 30' })
     @MinLength(2, { message: 'country should be more than 2' })
     country?: string;
 
