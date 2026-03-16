@@ -169,6 +169,8 @@ export class AuthorService {
     const nextFullName = dto.full_name?.trim();
     const nextDescription = dto.description?.trim();
     const nextCountry = dto.country?.trim();
+    const nextEmail = dto.email?.trim();
+    const nextPassword = dto.password?.trim();;
 
     const shouldRemovePhoto = dto.remove_photo === 'true';
     const newPhotoUrl = file ? this.getAvatarPublicUrl(file.filename) : undefined;
@@ -182,6 +184,8 @@ export class AuthorService {
         ...(dto.country !== undefined ? { country: nextCountry || '' } : {}),
         ...(shouldRemovePhoto ? { author_photo: null } : {}),
         ...(newPhotoUrl !== undefined ? { author_photo: newPhotoUrl } : {}),
+        ...(nextEmail !== undefined ? { email: nextEmail } : {}),
+        ...(nextPassword !== undefined ? { password: nextPassword } : {}),
       });
 
       if ((shouldRemovePhoto || newPhotoUrl) && oldPhotoUrl) {
