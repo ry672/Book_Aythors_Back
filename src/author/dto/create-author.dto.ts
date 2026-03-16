@@ -35,12 +35,12 @@ export class AuthorCreateDto {
   @ApiProperty({ example: 'Tashkent', description: 'Your country', required: false })
   @IsOptional()
   @IsString({ message: 'should be string' })
-  @MaxLength(30, { message: 'countryshould be less than 30' })
+  @MaxLength(30, { message: 'country should be less than 30' })
   @MinLength(2, { message: 'country should be more than 2' })
   country?: string;
 
   @ApiProperty({ example: 'ruf7306@gmail.com', description: 'Your email' })
-  @IsString({ message: 'should be string' })
+  @IsString({ message: 'email should be string' })
   email: string;
 
   @ApiProperty({ example: "qwerty123", description: "Пароль пользователя" })
