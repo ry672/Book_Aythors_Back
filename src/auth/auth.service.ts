@@ -119,46 +119,6 @@ export class AuthService {
     }
   }
 
-  async refreshTokens(authorId: number, refreshToken: string) {
-    try {
-      const author = await this.authorModel.findByPk(authorId);
-
-      if (!author || !author.hashed_refresh_token) {
-        throw new UnauthorizedException('Access denied');
-      }
-
-      const tokenMatches = await bcrypt.compare(
-        refreshToken,
-        author.hashed_refresh_token,
-      );
-
-      if (!tokenMatches) {
-        throw new UnauthorizedException('Access denied');
-      }
-
-      if (!process.env.JWT_ACCESS_SECRET || !process.env.JWT_REFRESH_SECRET) {
-        throw new InternalServerErrorException(
-          'JWT secrets are not configured',
-        );
-      }
-
-      const tokens = await this.signTokens(author.id, author.email);
-      await this.setRefreshHash(author.id, tokens.refreshToken);
-
-      return tokens;
-    } catch (error) {
-      console.error('REFRESH ERROR:', error);
-
-      if (
-        error instanceof UnauthorizedException ||
-        error instanceof InternalServerErrorException
-      ) {
-        throw error;
-      }
-
-      throw new InternalServerErrorException('Failed to refresh token');
-    }
-  }
 
   async logout(authorId: number) {
     try {
@@ -174,29 +134,57 @@ export class AuthService {
     }
   }
 
-  async refresh(authorId: number, refreshToken: string) {
-    const author = await this.authorModel.findByPk(authorId, {
-     
-    });
+  async refresh(
+    authorId: number,
+    refreshToken: string,
+  ): Promise<{
+    user: {
+      id: number;
+      name: string;
+      full_name: string;
+      email: string;
+      description?: string;
+      author_photo?: string | null;
+      country?: string;
+      is_deleted: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+    };
+    accessToken: string;
+    refreshToken: string;
+  }> {
+    if (!process.env.JWT_ACCESS_SECRET || !process.env.JWT_REFRESH_SECRET) {
+      throw new InternalServerErrorException('JWT secrets are not configured');
+    }
+
+    const author = await this.authorModel.findByPk(authorId);
 
     if (!author || !author.hashed_refresh_token) {
       throw new UnauthorizedException('Неверная сессия');
     }
 
     const valid = await bcrypt.compare(refreshToken, author.hashed_refresh_token);
+
     if (!valid) {
       throw new UnauthorizedException('Неверная сессия');
     }
-
-    
-
-    if (!author.id) throw new UnauthorizedException('Некорректный пользователь');
 
     const tokens = await this.signTokens(author.id, author.email);
     await this.setRefreshHash(author.id, tokens.refreshToken);
 
     return {
-      user: author.toJSON(),
+      user: {
+        id: author.id,
+        name: author.name,
+        full_name: author.full_name,
+        email: author.email,
+        description: author.description,
+        author_photo: author.author_photo,
+        country: author.country,
+        is_deleted: author.is_deleted,
+        createdAt: author.createdAt,
+        updatedAt: author.updatedAt,
+      },
       ...tokens,
     };
   }
@@ -219,7 +207,7 @@ export class AuthService {
       refreshToken,
     };
   }
-  
+
 
   private async setRefreshHash(authorId: number, refreshToken: string) {
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 7);
@@ -230,8 +218,8 @@ export class AuthService {
     );
   }
 
-  private async setRefreshPassword(authorId: number, password: string) {
+  // private async setRefreshPassword(authorId: number, password: string) {
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-  }
+  //   const hashedPassword = await bcrypt.hash(password, 10);
+  // }
 }
