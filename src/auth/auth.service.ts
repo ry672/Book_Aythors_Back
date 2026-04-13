@@ -174,6 +174,33 @@ export class AuthService {
     }
   }
 
+  async refresh(authorId: number, refreshToken: string) {
+    const author = await this.authorModel.findByPk(authorId, {
+     
+    });
+
+    if (!author || !author.hashed_refresh_token) {
+      throw new UnauthorizedException('Неверная сессия');
+    }
+
+    const valid = await bcrypt.compare(refreshToken, author.hashed_refresh_token);
+    if (!valid) {
+      throw new UnauthorizedException('Неверная сессия');
+    }
+
+    
+
+    if (!author.id) throw new UnauthorizedException('Некорректный пользователь');
+
+    const tokens = await this.signTokens(author.id, author.email);
+    await this.setRefreshHash(author.id, tokens.refreshToken);
+
+    return {
+      user: author.toJSON(),
+      ...tokens,
+    };
+  }
+
   private async signTokens(authorId: number, email: string) {
     const payload = { sub: authorId, email };
 
@@ -201,5 +228,10 @@ export class AuthService {
       { hashed_refresh_token: hashedRefreshToken },
       { where: { id: authorId } },
     );
+  }
+
+  private async setRefreshPassword(authorId: number, password: string) {
+
+    const hashedPassword = await bcrypt.hash(password, 10);
   }
 }
